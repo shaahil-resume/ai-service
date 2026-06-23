@@ -1,15 +1,22 @@
 package com.shaahil.resume.ai.service;
 
 import com.pgvector.PGvector;
+import com.shaahil.resume.ai.dto.ChatLogRequestDto;
+import com.shaahil.resume.ai.dto.ChatLogResponse;
 import com.shaahil.resume.ai.dto.ChatRequestDto;
 import com.shaahil.resume.ai.dto.ChatResponseDto;
-import com.shaahil.resume.ai.entity.ResumeChunk;
+import com.shaahil.resume.ai.entity.ChatLog;
+import com.shaahil.resume.ai.repository.ChatLogRepository;
+import org.springframework.data.domain.Page;
 import com.shaahil.resume.ai.repository.ResumeChunkRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,6 +26,7 @@ public class ChatService {
     private final ChatClient chatClient;
     private final ResumeChunkRepository resumeChunkRepository;
     private final EmbeddingModel embeddingModel;
+    private final ChatLogRepository chatLogRepository;
 
     public ChatResponseDto chat(ChatRequestDto request){
         PGvector embededQuestion = new PGvector(embeddingModel.embed(request.getQuestion()));
@@ -66,5 +74,26 @@ public class ChatService {
                 .content();
         return ChatResponseDto.builder().answerText(responseDto).build();
     }
+
+    @Transactional
+    public ChatLogResponse saveChatLog(ChatLogRequestDto allConversation) {
+        List<ChatLog> chatLogs = new ArrayList<>();
+        allConversation.getConversation().forEach(conversation -> {
+            ChatLog chatLogEntity = new ChatLog();
+            chatLogEntity.setConversationId(allConversation.getConversationId());
+            chatLogEntity.setEmail(allConversation.getEmail());
+            chatLogEntity.setQuestion(conversation.getQuestion());
+            chatLogEntity.setAnswer(conversation.getAnswer());
+            chatLogs.add(chatLogEntity);
+        });
+        List<ChatLog> savedLogs= chatLogRepository.saveAll(chatLogs);
+        return ChatLogResponse.builder().saveCount(savedLogs.size()).status("SUCCESS").build();
+    }
+
+    public Page<ChatLog> getLogs(String email, Pageable pageable){
+        return chatLogRepository.findByEmail(email, pageable);
+    }
+
+
 
 }

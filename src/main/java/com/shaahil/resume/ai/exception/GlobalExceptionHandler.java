@@ -23,4 +23,12 @@ public class GlobalExceptionHandler {
         ErrorResponseDto responseDto = ErrorResponseDto.builder().code(HttpStatus.BAD_REQUEST.value()).errorMessage(exceptionMessages).build();
         return new ResponseEntity<>(responseDto, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDto> handleException(Exception ex) {
+        List<String> exceptionMessages = new ArrayList<>();
+        exceptionMessages.add(ex.getMessage());
+        ErrorResponseDto responseDto = ErrorResponseDto.builder().code(HttpStatus.INTERNAL_SERVER_ERROR.value()).errorMessage(exceptionMessages).build();
+        return new ResponseEntity<>(responseDto, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
